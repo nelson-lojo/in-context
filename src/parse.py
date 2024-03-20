@@ -58,7 +58,7 @@ def _get_value(
     return casted_result
 
 
-def expand_curriculum(raw_data: dict, total_steps: int) -> tuple[list[dict], list[int]]:
+def expand_curriculum(raw_data: dict) -> tuple[list[dict], list[int]]:
 
     def identify_curriculum_params(data: dict) -> list[list]:
         paths = [ ]
@@ -79,7 +79,7 @@ def expand_curriculum(raw_data: dict, total_steps: int) -> tuple[list[dict], lis
     for c in currs:
         partitioning_steps = partitioning_steps.union(set(c.partitioning_steps))
     partitioning_steps = sorted(list(partitioning_steps))
-    partitioning_steps = filter(lambda step_num: step_num <= total_steps, partitioning_steps)
+    partitioning_steps = filter(lambda step_num: step_num <= raw_data['steps'], partitioning_steps)
 
     stages = [ ]
     durations = [ ]
@@ -220,44 +220,70 @@ def produce_trainer_stages(data: dict) -> tuple[list[ContextTrainer], Optional[C
         stages[i]['steps'] = step_counts[i]
     
     for stage in stages:
-        b_size  = stage['train']['b_size']
-        seq_len = stage['train']['seq_len']
-        x_curriculum_dim = stage['train']['x_dim']
+        b_size  = stage['b_size']
+        seq_len = stage['seq_len']
+        x_curriculum_dim = stage['x_dim']
 
-        stage['train']['x_dist'] = get_x_distribution(
-            b_size, seq_len, x_dim, stage['train'].get('x_dist', {})
+        stage['x_dist'] = get_x_distribution(
+            b_size, seq_len, x_dim, stage.get('x_dist', {})
         )
 
-        stage['train']['model'] = get_model(
-            stage['train']['model'] | { "x_dim" : x_dim }
+        stage['model'] = get_model(
+            stage['model'] | { "x_dim" : x_dim }
         )
 
-        stage['train']['baseline_models'] = list(map(
+        model = model or stage['model']
+
+        stage['baseline_models'] = list(map(
             lambda d: get_model(
                 d | {"x_dim" : x_dim}
             ), 
-            stage['train']['baseline_models']
+            stage['baseline_models']
         ))
 
-        stage['train']['function_class'] = get_function_class(
-            stage['train']['x_dist'],
+        stage['loss_fn'] = get_loss_fn(stage.get('loss_fn', {}))
+
+
+        if stage['model'] is None:
+            raise ValueError("Cannot instantiate optimizer: Model is undefined!")
+        stage['optim'] = get_optimizer(stage['model'], stage.get('optim', {}))
+
+
+        if stage['x_dist'] is None:
+            raise ValueError("Cannot instantiate function class: x distribution is undefined!")
+        stage['function_class'] = get_function_class(
+            stage['x_dist'],
             x_curriculum_dim,
-            stage['train']['function_class']
+            stage['function_class']
         )
-    return stages
 
+    return [ ContextTrainer(**stage) for stage in stages ], model
 
-def parse_elaborated_stages(filename: str) -> tuple[list[dict], list[int]]:
+def parse_training(filename: str) -> tuple[list[ContextTrainer], str]:
     with open(filename, 'r') as f:
         content = f.read()
 
     d = yaml.load(content, Loader=yaml.Loader)
+    reingestible_yaml = yaml.dump(d, Dumper=yaml.Dumper)
 
-    x_dim: int = _get_value(d['train']['x_dim'], int(1e99)) 
-    stages, step_counts = expand_curriculum(d, int(1e4)) # TODO: pull from dict
-    stages = elaborate_stages(stages, x_dim)
+    trainers = produce_trainer_stages(d['train'])
 
-    return stages, step_counts
+    return trainers, reingestible_yaml
+
+# def train_constructor(loader: yaml.Loader | yaml.FullLoader | yaml.UnsafeLoader, node: yaml.Node) -> Optional[ContextTrainer]:
+
+    # import code
+    # code.interact(local=locals())
+
+    # x_dim: int = _get_value(d['train']['x_dim'], int(1e99)) 
+    # stages, step_counts = expand_curriculum(d, int(1e4)) # TODO: pull from dict
+    # stages = elaborate_stages(stages, x_dim)
+
+    # reingestible_yaml = yaml.dump(d, Dumper=yaml.Dumper)dir(l)
+
+from train.context_trainer import TrainerSteps
+
+# yaml.add_constructor("!trainer", train_constructor)
 
 # stages, yaml_str = parse_training("sample.yml")
 # trainer = TrainerSteps(stages)
