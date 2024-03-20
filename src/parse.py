@@ -165,58 +165,60 @@ def get_function_class(x_dist: D.Distribution, x_curr_dim: int, data: dict) -> O
     except Exception as e:
         print(f"Unexpected error when instantiating model!: \n\t{e}")
 
-# def get_relevant_baselines(task_name):
-#     task_to_baselines = {
-#         "linear_regression": [
-#             (LeastSquaresModel, {}),
-#             (KNNModel, {"n_neighbors": 3}),
-#             (AveragingModel, {}),
-#         ],
-#         "linear_classification": [
-#             (KNNModel, {"n_neighbors": 3}),
-#             (AveragingModel, {}),
-#         ],
-#         "sparse_linear_regression": [
-#             (LeastSquaresModel, {}),
-#             (KNNModel, {"n_neighbors": 3}),
-#             (AveragingModel, {}),
-#         ]
-#         + [(LassoModel, {"alpha": alpha}) for alpha in [1, 0.1, 0.01, 0.001, 0.0001]],
-#         "relu_2nn_regression": [
-#             (LeastSquaresModel, {}),
-#             (KNNModel, {"n_neighbors": 3}),
-#             (AveragingModel, {}),
-#             (
-#                 GDModel,
-#                 {
-#                     "model_class_name": "mlp",
-#                     "model_class_args": {
-#                         "in_size": 20,
-#                         "hidden_size": 100,
-#                         "out_size": 1,
-#                     },
-#                     "opt_alg_name": "adam",
-#                     "batch_size": 100,
-#                     "lr": 5e-3,
-#                     "num_steps": 100,
-#                 },
-#             ),
-#         ],
-#         "decision_tree": [
-#             (LeastSquaresModel, {}),
-#             (KNNModel, {"n_neighbors": 3}),
-#             (DecisionTreeModel, {"max_depth": 4}),
-#             (DecisionTreeModel, {"max_depth": None}),
-#             (XGBoostModel, {}),
-#             (AveragingModel, {}),
-#         ],
-#     }
+def get_optimizer(model: ContextModel, data: dict) -> Optional[torch.optim.Optimizer]:
+    if 'type' not in data:
+        raise KeyError(f"Optimizer type not specified!")
 
-#     models = [model_cls(**kwargs) for model_cls, kwargs in task_to_baselines[task_name]]
-#     return models
+    OPTIMIZERS = {
+        "sgd" : torch.optim.SGD,
+        "adam": torch.optim.Adam
+    }
+
+    optim_type: type[torch.optim.Optimizer] | Callable[[Any], None] = OPTIMIZERS.get(data['type'],
+        curried_throw(NotImplementedError(f"Invalid optimizer! Got: `{data['type']}`"))
+    )
+
+    del data['type']
+    try:
+        return optim_type(model.parameters(), **data)
+    except Exception as e:
+        print(f"Unexpected error when instantiating optimizer!: \n\t{e}")
+
+def get_loss_fn(data: dict) -> Optional[torch.nn.Module]:
+    if 'type' not in data:
+        raise KeyError(f"Loss function type not specified!")
+    
+    LOSS_FNS = {
+        "squared" : torch.nn.MSELoss
+    }
+
+    loss_fn_type: type[torch.nn.Module] | Callable[[], None] = LOSS_FNS.get(data['type'],
+        curried_throw(NotImplementedError(f"Invalid option for loss function! Got: {data['type']}"))
+    )
+
+    del data['type']
+    try:
+        return loss_fn_type(**data)
+    except Exception as e:
+        print(f"Unexpected error when instantiating loss function!: \n\t{e}")
 
 
-def elaborate_stages(stages, x_dim):
+# class ContextTrainer:
+#     def __init__(self, *args, **kwargs):
+#         print(kwargs)
+#         print(f"For step_count: {kwargs['steps']}")
+
+from train.context_trainer import ContextTrainer
+
+def produce_trainer_stages(data: dict) -> tuple[list[ContextTrainer], Optional[ContextModel]]:
+    """Convert a list of YAML primitive stage dicts to a list of dictionaries with instantiated objects"""
+
+    x_dim: int = _get_value(data['x_dim'], int(1e99)) 
+    stages, step_counts = expand_curriculum(data)
+    model = None
+    for i in range(len(stages)):
+        stages[i]['steps'] = step_counts[i]
+    
     for stage in stages:
         b_size  = stage['train']['b_size']
         seq_len = stage['train']['seq_len']
@@ -257,4 +259,7 @@ def parse_elaborated_stages(filename: str) -> tuple[list[dict], list[int]]:
 
     return stages, step_counts
 
-stages, step_counts = parse_elaborated_stages("sample.yml")
+# stages, yaml_str = parse_training("sample.yml")
+# trainer = TrainerSteps(stages)
+# trainer.train()
+
