@@ -21,7 +21,7 @@ for stage, step_count in zip(stages, step_counts):
                                      model=model,
                                      optim=optim,
                                      loss_fn=loss_fn,
-                                     num_steps=step_count,
+                                     steps=step_count,
                                      baseline_models=stage['train']['baseline_models'],
                                      log_freq=-1)
     

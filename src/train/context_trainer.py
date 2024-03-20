@@ -1,4 +1,4 @@
-from core.function_class import FunctionClass
+from core import FunctionClass
 from torch.optim import Optimizer
 from core import ContextModel
 import torch
@@ -14,15 +14,16 @@ class ContextTrainer:
         model: ContextModel,
         optim: Optimizer, 
         loss_fn: nn.Module,
-        num_steps: int,
+        steps: int,
         baseline_models: List,
-        log_freq: int
+        log_freq: int = -1,
+        **kwargs
     ):
         self.func_class = function_class
         self.model = model
         self.optimizer = optim 
         self.loss_func = loss_fn
-        self.num_steps = num_steps
+        self.num_steps = steps
         self.baseline_models = baseline_models
         self.log_freq = log_freq 
         # wandb.log(self.metadata)
