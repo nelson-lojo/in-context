@@ -1,4 +1,4 @@
-from function_classes.function_class import FunctionClass
+from core.function_class import FunctionClass
 from torch.optim import Optimizer
 from core import ContextModel
 import torch
@@ -25,7 +25,7 @@ class ContextTrainer:
         self.num_steps = num_steps
         self.baseline_models = baseline_models
         self.log_freq = log_freq 
-        wandb.log(self.metadata)
+        # wandb.log(self.metadata)
         #self.metadata = ... # config stuff here ********* TODO: excuse me what
 
 
@@ -58,9 +58,12 @@ class ContextTrainer:
                     } 
                 log_dict |= {f"baseline_loss_{baseline.name}": baseline_loss[baseline.name] for baseline in self.baseline_models}
 
+                # wandb.log(
+                #     data=log_dict,
+                #     step=i,
+                # )
                 wandb.log(
-                    data=log_dict,
-                    step=i,
+                    data=log_dict
                 )
 
             # TODO: stretch goal: log functions / precompute dataset?
@@ -68,10 +71,9 @@ class ContextTrainer:
 
         return self.model
 
-    @property
-    def metadata(self) -> dict:
-        return self.metadata
-
+    # @property
+    # def metadata(self) -> dict:
+    #     return self.metadata
 class TrainerSteps(ContextTrainer):
 
     def __init__(self, 
