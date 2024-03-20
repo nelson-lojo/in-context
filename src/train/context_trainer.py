@@ -78,47 +78,13 @@ class ContextTrainer:
 class TrainerSteps(ContextTrainer):
 
     def __init__(self, 
-        function_classes: list[FunctionClass], 
-        model: ContextModel, 
-        optim: Optimizer, 
-        loss_fn: nn.Module, 
-        num_steps: list[int], 
-        log_freq: int
+        trainers: list[ContextTrainer]
     ):
-
-        assert len(function_classes) == len(num_steps), \
-            f"The number of training stages does not match between step counts and function classes!"
-
-        self.fcs = function_classes
-        self.model = model
-        self.optim = optim
-        self.loss_fn = loss_fn
-        self.num_steps = num_steps
-        self.log_freq = log_freq
-
-        self.trainers = [
-            ContextTrainer(
-                fc,
-                model,
-                optim,
-                loss_fn,
-                step_count,
-                log_freq
-            )
-            for fc, step_count in zip(function_classes, num_steps)
-        ]
+        self.trainers = trainers
 
     def train(self, pbar: Optional[Any] = None) -> ContextModel:
 
-        for fc, step_count in zip(self.fcs, self.num_steps):
-            trainer = ContextTrainer(
-                fc,
-                self.model,
-                self.optim,
-                self.loss_fn,
-                step_count,
-                self.log_freq
-            )
+        for trainer in self.trainers:
             self.model = trainer.train(pbar)
 
         return self.model

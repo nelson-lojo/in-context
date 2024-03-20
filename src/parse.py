@@ -266,9 +266,9 @@ def parse_training(filename: str) -> tuple[list[ContextTrainer], str]:
     d = yaml.load(content, Loader=yaml.Loader)
     reingestible_yaml = yaml.dump(d, Dumper=yaml.Dumper)
 
-    trainers = produce_trainer_stages(d['train'])
+    trainers, model = produce_trainer_stages(d['train'])
 
-    return trainers, reingestible_yaml
+    return trainers, model, reingestible_yaml
 
 # def train_constructor(loader: yaml.Loader | yaml.FullLoader | yaml.UnsafeLoader, node: yaml.Node) -> Optional[ContextTrainer]:
 

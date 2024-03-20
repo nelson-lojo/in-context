@@ -6,6 +6,10 @@ model: &std_gpt2
     n_head: 2
 
 train:
+    optim:
+        type: sgd
+    loss_fn:
+        type: squared
     function_class: 
         type: linear regression
     b_size: 32
@@ -21,5 +25,6 @@ train:
         step_len: 10000
     x_dist:
         type: normal
+    steps: 500000
     model: *std_gpt2
     baseline_models: []
