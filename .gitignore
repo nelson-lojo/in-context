@@ -1,0 +1,7 @@
+__pycache__
+.venv
+.vscode
+src/wandb
+.idea
+*.pkl
+*.pth
