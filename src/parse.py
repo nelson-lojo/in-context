@@ -233,6 +233,7 @@ def produce_trainer_stages(data: dict) -> tuple[list[ContextTrainer], Optional[C
         )
 
         model = model or stage['model']
+        stage['model'] = model or stage['model']
 
         stage['baseline_models'] = list(map(
             lambda d: get_model(

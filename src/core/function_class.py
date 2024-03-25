@@ -46,6 +46,10 @@ class FunctionClass:
 
         params: List[torch.Tensor] | torch.Tensor  = self.p_dist.sample()
         y_batch: torch.Tensor = self.evaluate(x_batch, params)
+
+        x_batch = x_batch.to(torch.device("cuda:0"))
+        y_batch = y_batch.to(torch.device("cuda:0"))
+
         return x_batch, y_batch
 
     def _init_param_dist(self) -> Distribution:

@@ -51,7 +51,7 @@ class ContextTrainer:
                 for baseline in self.baseline_models:
                     baseline_output = baseline(x_batch, y_batch)
                     with torch.no_grad():
-                        baseline_loss[baseline.name] = self.loss_func(baseline_output, y_batch)
+                        baseline_loss[baseline.name] = self.loss_func(baseline_output, y_batch.to(torch.device("cpu")))
 
                 log_dict = {
                         "overall_loss": loss,

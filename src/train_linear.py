@@ -9,5 +9,6 @@ import wandb
 wandb.init()
 
 stages, model, yaml_str = parse_training("train_linear.yml")
+model = model.to(torch.device("cuda:0"))
 trainer = TrainerSteps(stages)
 trainer.train()
