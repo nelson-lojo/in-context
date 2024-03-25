@@ -7,7 +7,8 @@ model: &std_gpt2
 
 train:
     optim:
-        type: sgd
+        type: adam
+        lr: 0.0001
     loss_fn:
         type: squared
     function_class: 
