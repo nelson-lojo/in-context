@@ -5,6 +5,9 @@ model: &std_gpt2
     n_embd: 64
     n_head: 2
 
+model: &least_squares
+    type: least squares
+
 train:
     optim:
         type: adam
@@ -28,4 +31,4 @@ train:
         type: normal
     steps: 500000
     model: *std_gpt2
-    baseline_models: []
+    baseline_models: [*least_squares]
