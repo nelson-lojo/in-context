@@ -26,12 +26,11 @@ class ContextTrainer:
         self.num_steps = steps
         self.baseline_models = baseline_models
         self.log_freq = log_freq 
-        # wandb.log(self.metadata)
-        #self.metadata = ... # config stuff here ********* TODO: excuse me what
-
-
+        self.metadata = {k:v for k, v in zip(kwargs.keys(), kwargs.values()) if isinstance(v, (int, float))}
 
     def train(self, pbar: Optional[Any] = None) -> ContextModel:
+
+        wandb.log(data=self.metadata, commit=False)
 
         baseline_loss = {}
 
@@ -59,22 +58,12 @@ class ContextTrainer:
                     } 
                 log_dict |= {f"baseline_loss_{baseline.name}": baseline_loss[baseline.name] for baseline in self.baseline_models}
 
-                # wandb.log(
-                #     data=log_dict,
-                #     step=i,
-                # )
-                wandb.log(
-                    data=log_dict
-                )
+                wandb.log(data=log_dict)
 
             # TODO: stretch goal: log functions / precompute dataset?
-            # TODO: log the xs, ys?
 
         return self.model
 
-    # @property
-    # def metadata(self) -> dict:
-    #     return self.metadata
 class TrainerSteps(ContextTrainer):
 
     def __init__(self, 
